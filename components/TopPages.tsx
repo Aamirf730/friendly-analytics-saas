@@ -1,66 +1,85 @@
-import { FileText, Share2 } from "lucide-react";
+"use client";
 
 interface TopPagesProps {
   pages: { title: string; path: string; views: number }[];
-  variant?: "standard" | "minimal";
+  onExport?: () => void;
 }
 
-export function TopPages({ pages, variant = "standard" }: TopPagesProps) {
-  if (variant === "minimal") {
-    return (
-      <div className="divide-y divide-slate-50">
-        {pages.slice(0, 5).map((page, i) => (
-          <div key={i} className="p-5 hover:bg-slate-50 transition-colors">
-            <div className="flex justify-between items-start mb-2 gap-4">
-              <h4 className="text-sm font-bold text-slate-800 line-clamp-1 flex-1">{page.title || page.path}</h4>
-              <span className="text-xs font-bold text-indigo-600 tabular-nums">
-                {page.views >= 1000 ? (page.views / 1000).toFixed(1) + 'k' : page.views}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[9px] font-black uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded text-slate-500">
-                Performance
-              </span>
-              <span className="text-[9px] font-bold text-slate-400 truncate max-w-[150px]">{page.path}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+export function TopPages({ pages, onExport }: TopPagesProps) {
+  // Simulate some scores for the UI display
+  const getScore = (idx: number) => {
+    const scores = [94, 88, 72, 65, 58];
+    return scores[idx] || 50;
+  };
 
   return (
-    <div className="bg-white">
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">Content Audit</h3>
-        <Share2 size={16} className="text-slate-300" />
+    <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
+      <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Content Performance</h3>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Top performing pages by reach and conversion</p>
+        </div>
+        <button
+          onClick={onExport}
+          className="text-xs font-bold text-indigo-600 hover:underline"
+        >
+          Export Full Audit
+        </button>
       </div>
-      <div className="space-y-4">
-        {pages.slice(0, 6).map((page, idx) => (
-          <div key={idx} className="group flex items-center justify-between p-4 rounded-2xl border border-slate-50 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all duration-300">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                <FileText size={18} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-slate-700 truncate group-hover:text-slate-900 transition-colors">
-                  {page.title || page.path}
-                </p>
-                <p className="text-[10px] font-bold text-slate-400 truncate tracking-wide">{page.path}</p>
-              </div>
-            </div>
-            <div className="pl-4">
-              <span className="text-sm font-bold text-indigo-600 tabular-nums">
-                {page.views.toLocaleString()}
-              </span>
-            </div>
-          </div>
-        ))}
-        {pages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-sm font-bold text-slate-300 italic">No page data available</p>
-          </div>
-        )}
+
+      <div className="p-0 overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="text-[10px] font-black text-slate-400 border-b border-slate-50">
+              <th className="py-4 px-8 uppercase tracking-[0.2em]">Page Title</th>
+              <th className="py-4 px-4 uppercase tracking-[0.2em]">Visitors</th>
+              <th className="py-4 px-4 uppercase tracking-[0.2em]">Engagement</th>
+              <th className="py-4 px-8 uppercase tracking-[0.2em] text-right">Score</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {pages.slice(0, 8).map((page, i) => {
+              const score = getScore(i);
+              return (
+                <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
+                  <td className="py-5 px-8">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        {page.title || 'Untitled Page'}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400 tracking-tight">{page.path}</span>
+                    </div>
+                  </td>
+                  <td className="py-5 px-4 font-bold text-slate-700 tabular-nums">
+                    {page.views.toLocaleString()}
+                  </td>
+                  <td className="py-5 px-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[11px] font-bold text-indigo-600">3.2% Conv.</span>
+                      <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-indigo-500 w-2/3" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-5 px-8 text-right">
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-tight ${score > 80 ? 'bg-emerald-50 text-emerald-700' :
+                        score > 60 ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                      {score}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+            {pages.length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-12 text-center text-sm font-bold text-slate-300 italic">
+                  No content data available for this period
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

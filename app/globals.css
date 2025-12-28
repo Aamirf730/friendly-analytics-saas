@@ -17,22 +17,56 @@ body {
   min-height: 100vh;
 }
 
-/* Custom Scrollbar for a professional look */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* Base custom animations */
+@layer utilities {
+  .animate-in {
+    animation-duration: 500ms;
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    animation-name: fadeIn;
+  }
+
+  .slide-in-from-bottom-2 {
+    animation-name: slideInFromBottom;
+  }
+
+  /* Custom Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+  }
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 10px;
-}
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(0.5rem);
+    opacity: 0;
+  }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .animate-entrance {
@@ -49,12 +83,4 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* Glassmorphism utilities for specific overlays if needed */
-.glass-effect {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
 }
