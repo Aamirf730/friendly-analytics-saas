@@ -292,9 +292,9 @@ export default function Home() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans flex">
+      <div className="h-screen bg-[#F8FAFC] text-slate-900 font-sans flex overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-64 border-r border-slate-200 bg-white hidden lg:flex flex-col sticky top-0 h-screen z-20">
+        <aside className="w-64 border-r border-slate-200 bg-white hidden lg:flex flex-col h-full z-20 flex-shrink-0">
           <div className="p-10 flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-50">
               <Activity size={22} />
@@ -305,7 +305,7 @@ export default function Home() {
             </div>
           </div>
 
-          <nav className="flex-1 px-4 space-y-1.5">
+          <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
             {[
               { label: 'Overview', icon: LayoutDashboard },
               { label: 'Content', icon: Layers },
@@ -338,7 +338,7 @@ export default function Home() {
         </aside>
 
         {/* Main Workspace */}
-        <main className="flex-1 p-8 lg:p-12 overflow-x-hidden">
+        <main className="flex-1 p-8 lg:p-12 overflow-y-auto overflow-x-hidden custom-scrollbar">
           {/* Optimized Header */}
           <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div className="space-y-2">

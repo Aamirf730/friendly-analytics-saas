@@ -13,7 +13,7 @@ interface TrafficChartProps {
 
 export function TrafficChart({ data, title, subtitle }: TrafficChartProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full">
+    <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
       {(title || subtitle) && (
         <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
           <div>
@@ -22,7 +22,8 @@ export function TrafficChart({ data, title, subtitle }: TrafficChartProps) {
           </div>
         </div>
       )}
-      <div className="p-8 flex-1 min-h-[320px]">
+      {/* FIXED: Using a fixed height container for the chart to prevent infinite expansion in flex layouts */}
+      <div className="p-8 h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data}>
             <defs>
@@ -63,7 +64,7 @@ export function TrafficChart({ data, title, subtitle }: TrafficChartProps) {
               fill="url(#areaColor)"
               animationDuration={1500}
             />
-            {data[0]?.secondary !== undefined && (
+            {data && data.length > 0 && data[0].secondary !== undefined && (
               <Line
                 type="monotone"
                 dataKey="secondary"
