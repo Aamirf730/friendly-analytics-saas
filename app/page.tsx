@@ -2,8 +2,12 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { MetricCard } from "@/components/MetricCard";
-import { TrafficChart } from "@/components/TrafficChart";
+import {
+  MetricCard
+} from "@/components/MetricCard";
+import {
+  TrafficChart
+} from "@/components/TrafficChart";
 import { TopPages } from "@/components/TopPages";
 import { TrafficSources } from "@/components/TrafficSources";
 import { InsightsList } from "@/components/InsightsList";
@@ -11,28 +15,46 @@ import { DateRangeSelector } from "@/components/DateRangeSelector";
 import { PropertySelector } from "@/components/PropertySelector";
 import { MagicBriefing } from "@/components/MagicBriefing";
 import {
-  Users,
-  MousePointer2,
-  Eye,
-  LogOut,
-  ChevronDown,
-  BarChart3,
-  Sparkles,
   LayoutDashboard,
-  RefreshCw,
-  Clock,
-  Home as HomeIcon,
-  ChevronRight,
+  BarChart3,
   Settings,
-  Bell,
-  ShieldCheck,
+  ChevronRight,
+  TrendingUp,
+  Users,
+  Clock,
+  ArrowUpRight,
+  ArrowDownRight,
+  RefreshCw,
+  Crown,
+  Layers,
+  Activity,
   Zap,
+  Target,
+  Share2,
+  Globe,
+  Sparkles,
+  ShieldCheck,
+  ExternalLink,
+  LogOut,
+  Bell
 } from "lucide-react";
 import { generateHumanInsights } from "@/lib/insights";
 import type { AnalyticsSummary, DateRange } from "@/types/analytics";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ExportButton } from "@/components/ExportButton";
-import { MetricCardSkeleton, ChartSkeleton, ListSkeleton } from "@/components/LoadingSkeleton";
+import { MetricCardSkeleton, ChartSkeleton } from "@/components/LoadingSkeleton";
+
+// --- Simple SVG Global Pulse Component ---
+const GlobalPulse = () => (
+  <svg viewBox="0 0 800 400" className="w-full h-auto opacity-30">
+    <circle cx="200" cy="150" r="2" fill="#4f46e5" className="animate-pulse" />
+    <circle cx="400" cy="200" r="2" fill="#4f46e5" />
+    <circle cx="600" cy="120" r="2" fill="#4f46e5" className="animate-pulse" />
+    <path d="M100,200 Q200,100 300,200 T500,200 T700,150" fill="none" stroke="#4f46e5" strokeWidth="0.5" strokeDasharray="4 4" />
+    <text x="210" y="145" fontSize="10" className="fill-slate-400 font-medium">New York</text>
+    <text x="610" y="115" fontSize="10" className="fill-slate-400 font-medium">London</text>
+  </svg>
+);
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -41,40 +63,41 @@ export default function Home() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [selectedDateRange, setSelectedDateRange] = useState<DateRange & { preset?: any }>({
+  const [liveUsers, setLiveUsers] = useState(48);
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRange & { preset?: string }>({
     startDate: "30daysAgo",
     endDate: "today",
     label: "Last 30 Days",
     preset: "30D"
   });
 
+  // Simulate live users fluctuations
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveUsers(prev => Math.max(20, prev + Math.floor(Math.random() * 7) - 3));
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handleRefresh = async () => {
     if (!selectedProperty) return;
-
     setIsRefreshing(true);
     setError(null);
     try {
       const url = `/api/analytics/summary?propertyId=${selectedProperty}`;
       const params = new URLSearchParams();
-
       if (selectedDateRange.startDate !== "30daysAgo") {
         params.append("startDate", selectedDateRange.startDate);
         params.append("endDate", selectedDateRange.endDate);
       }
-
       const res = await fetch(`${url}&${params.toString()}`);
       const data = await res.json();
-
       if (data.error) {
         setError(data.error);
         setSummary(null);
       } else {
         setSummary(data);
-        setLastUpdated(new Date());
       }
     } catch (err) {
       console.error("Error refreshing data:", err);
@@ -99,11 +122,10 @@ export default function Home() {
             if (data.length > 0) {
               setSelectedProperty(data[0].id);
             } else {
-              setError("No Google Analytics properties found for this account.");
+              setError("No Google Analytics properties found.");
             }
           } else {
             setError(data.error || "Failed to load properties.");
-            setProperties([]);
           }
         })
         .catch((err) => {
@@ -117,15 +139,12 @@ export default function Home() {
     if (selectedProperty) {
       setLoading(true);
       setError(null);
-
       const url = `/api/analytics/summary?propertyId=${selectedProperty}`;
       const params = new URLSearchParams();
-
       if (selectedDateRange.startDate !== "30daysAgo") {
         params.append("startDate", selectedDateRange.startDate);
         params.append("endDate", selectedDateRange.endDate);
       }
-
       fetch(`${url}&${params.toString()}`)
         .then((res) => res.json())
         .then((data) => {
@@ -134,7 +153,6 @@ export default function Home() {
             setSummary(null);
           } else {
             setSummary(data);
-            setLastUpdated(new Date());
           }
           setLoading(false);
         })
@@ -148,60 +166,38 @@ export default function Home() {
 
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="flex flex-col items-center gap-6">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-[3rem] bg-slate-50 flex items-center justify-center animate-pulse border border-slate-100">
-              <div className="w-14 h-14 rounded-2xl bg-accent-primary/5 animate-spin"></div>
-            </div>
-            <Sparkles className="absolute -top-2 -right-2 text-accent-secondary animate-bounce" size={24} />
-          </div>
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">
-            Preparing Experience
-          </p>
-        </div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <RefreshCw className="animate-spin text-indigo-600" size={32} />
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 relative overflow-hidden bg-white">
-        {/* Premium Background Decor */}
-        <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[80%] bg-accent-primary/10 rounded-full blur-[160px] animate-pulse"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-[80%] h-[80%] bg-accent-secondary/10 rounded-full blur-[160px]"></div>
-
-        <div className="max-w-2xl w-full text-center relative z-10">
-          <div className="relative mb-16 inline-block">
-            <div className="w-32 h-32 bg-white/80 backdrop-blur-3xl rounded-[3.5rem] flex items-center justify-center mx-auto soft-shadow border border-white/60 group hover:rotate-6 transition-all duration-1000">
-              <BarChart3 className="text-accent-primary group-hover:text-accent-secondary transition-colors" size={60} strokeWidth={2.5} />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+        <div className="max-w-md w-full">
+          <div className="mb-10 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-6 text-white shadow-xl shadow-indigo-100">
+              <Activity size={32} />
             </div>
-            <div className="absolute -top-6 -right-6 w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-2xl border border-slate-50 animate-bounce">
-              <Zap className="text-amber-400 fill-amber-400" size={24} />
-            </div>
-          </div>
-
-          <div className="space-y-8 mb-20">
-            <h1 className="text-7xl md:text-8xl font-[950] text-slate-800 tracking-tighter leading-[0.9] -ml-2">
-              Friendly <span className="text-gradient">Data.</span>
-            </h1>
-            <p className="text-slate-400 font-bold text-2xl leading-relaxed max-w-lg mx-auto tracking-tight">
-              The world&apos;s most beautiful analytics tool. Built for humans who love clarity.
+            <h1 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">Friendly Analytics</h1>
+            <p className="text-slate-500 text-lg">
+              Professional insights without the complexity.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 max-w-sm mx-auto">
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-center">
             <button
               onClick={() => signIn("google")}
-              className="w-full bg-slate-900 text-white px-10 py-6 rounded-[3rem] font-[900] text-xl shadow-2xl hover:bg-slate-800 hover:translate-y-[-6px] active:scale-95 transition-all flex items-center justify-center gap-5 group"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-3 shadow-lg"
             >
-              <img src="https://www.google.com/favicon.ico" className="w-7 h-7" alt="Google" />
-              <span>Enter Dashboard</span>
+              <img src="https://www.google.com/favicon.ico" className="w-5 h-5 bg-white rounded-full p-0.5" alt="Google" />
+              Connect Google Analytics
             </button>
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] flex items-center justify-center gap-4 py-6">
-              <ShieldCheck size={16} className="text-emerald-400" />
-              Privacy First Platform
-            </p>
+            <div className="mt-8 flex items-center justify-center gap-6 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+              <span className="flex items-center gap-1.5"><ShieldCheck size={14} /> GDPR Compliant</span>
+              <span className="flex items-center gap-1.5"><Zap size={14} /> GA4 Native</span>
+            </div>
           </div>
         </div>
       </div>
@@ -210,219 +206,287 @@ export default function Home() {
 
   return (
     <ErrorBoundary>
-      <main className="min-h-screen bg-white pb-40">
-        {/* Minimalist Floating Navbar */}
-        <nav className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] w-full max-w-5xl px-6 pointer-events-none">
-          <div className="soft-navbar glass-pill px-8 py-4 rounded-[2.5rem] flex items-center justify-between pointer-events-auto shadow-2xl border-white/60">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-all">
-                  <BarChart3 className="text-white" size={20} strokeWidth={2.5} />
-                </div>
-                <span className="font-[900] text-sm text-slate-800 tracking-tight">Friendly.</span>
+      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans flex">
+        {/* Professional Sidebar */}
+        <aside className="w-64 border-r border-slate-200 bg-white hidden lg:flex flex-col sticky top-0 h-screen z-20">
+          <div className="p-8">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+                <Activity size={18} />
               </div>
-
-              <div className="h-6 w-px bg-slate-100 hidden md:block" />
-
-              <div className="hidden lg:flex items-center gap-2">
-                <div className="flex items-center gap-2 px-2">
-                  <LayoutDashboard size={14} className="text-accent-primary" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dashboard</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2 mr-4">
-                <Bell
-                  size={18}
-                  className={`cursor-pointer transition-colors ${showNotifications ? 'text-accent-primary' : 'text-slate-300 hover:text-accent-primary'}`}
-                  onClick={() => {
-                    setShowNotifications(!showNotifications);
-                    setShowSettings(false);
-                  }}
-                />
-                <Settings
-                  size={18}
-                  className={`cursor-pointer transition-colors ml-2 ${showSettings ? 'text-accent-primary' : 'text-slate-300 hover:text-accent-primary'}`}
-                  onClick={() => {
-                    setShowSettings(!showSettings);
-                    setShowNotifications(false);
-                  }}
-                />
-              </div>
-              <button
-                onClick={() => signOut()}
-                className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-100 transition-all active:scale-95"
-                title="Sign Out"
-              >
-                <LogOut size={16} strokeWidth={2.5} />
-              </button>
+              <span className="font-bold text-lg tracking-tight">Friendly</span>
             </div>
           </div>
 
-          {/* Settings/Notifications Dropdowns */}
-          {(showSettings || showNotifications) && (
-            <div className="fixed top-32 left-1/2 -translate-x-1/2 z-[110] w-full max-w-sm px-6 animate-in fade-in slide-in-from-top-4 duration-300">
-              <div className="glass-pill p-6 rounded-[2rem] shadow-2xl border-white/60 text-center bg-white/90 backdrop-blur-xl">
-                <div className="w-12 h-12 rounded-2xl bg-accent-primary/5 flex items-center justify-center mx-auto mb-4">
-                  {showSettings ? <Settings size={24} className="text-accent-primary" /> : <Bell size={24} className="text-accent-primary" />}
-                </div>
-                <h4 className="text-slate-800 font-[900] text-lg mb-2">{showSettings ? 'Settings' : 'Notifications'}</h4>
-                <p className="text-slate-400 text-sm font-bold mb-6">This feature is coming in the next update. Stay tuned for magic!</p>
-                <button
-                  onClick={() => { setShowSettings(false); setShowNotifications(false); }}
-                  className="px-8 py-2 bg-slate-900 text-white rounded-xl text-xs font-black active:scale-95 transition-all"
-                >
-                  Got it
-                </button>
-              </div>
-            </div>
-          )}
-        </nav>
+          <nav className="flex-1 px-4 space-y-1">
+            {[
+              { label: 'Overview', icon: LayoutDashboard, active: true },
+              { label: 'Content', icon: Layers },
+              { label: 'Acquisition', icon: Target },
+              { label: 'Reporting', icon: BarChart3 },
+              { label: 'Settings', icon: Settings }
+            ].map((item) => (
+              <button
+                key={item.label}
+                className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${item.active ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+              >
+                <item.icon size={18} />
+                {item.label}
+              </button>
+            ))}
+          </nav>
 
-        <div className="max-w-7xl mx-auto px-10 pt-48">
-          {/* Dashboard Command Center - TOP LEVEL CONTROLS UNMOUNTED-PROOF */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16 animate-entrance relative z-[60]">
-            <div className="flex items-center gap-3 bg-slate-50/50 p-2.5 rounded-[2.5rem] border border-slate-100/50 shadow-sm backdrop-blur-sm group hover:bg-white hover:shadow-xl transition-all duration-500">
-              <DateRangeSelector
-                onSelectDateRange={handleDateRangeChange}
-                isLoading={loading}
-                variant="pill"
-                selectedValue={selectedDateRange.preset}
-              />
-              <div className="h-8 w-px bg-slate-200/50 mx-1 hidden md:block" />
-              <div className="hidden sm:flex items-center gap-2 pr-4 pl-2">
-                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Property:</span>
+          <div className="p-6">
+            <div className="bg-slate-900 text-white rounded-2xl p-5 relative overflow-hidden group">
+              <Crown size={32} className="absolute -right-2 -bottom-2 opacity-10" />
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Account Level</p>
+              <h4 className="text-sm font-bold mb-3">Enterprise Pro</h4>
+              <button
+                onClick={() => signOut()}
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-[10px] uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              >
+                <LogOut size={12} /> Sign Out
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Workspace */}
+        <main className="flex-1 p-8 lg:p-12 overflow-x-hidden">
+
+          {/* Header Section */}
+          <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-1">
+              <h2 className="text-sm font-bold text-indigo-600 uppercase tracking-widest">Property Overview</h2>
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Performance Summary</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-slate-500 font-medium">Monitoring</span>
                 <PropertySelector
                   properties={properties}
                   selectedProperty={selectedProperty}
                   onSelect={setSelectedProperty}
                   isLoading={loading}
-                  variant="minimal"
                 />
               </div>
             </div>
-
-            <div className="flex items-center gap-3">
-              <ExportButton summary={summary} dateRange={selectedDateRange} />
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing || loading}
-                className="glass-pill px-8 py-3.5 flex items-center gap-3 disabled:opacity-50 group hover:shadow-2xl transition-all"
-              >
-                <RefreshCw size={16} className={`${isRefreshing ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-700"}`} />
-                <span className="text-sm font-black text-slate-700">Refine Narrative</span>
-              </button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="space-y-24 animate-pulse">
-              <div className="h-40 w-full bg-slate-50 rounded-[3rem]" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                <MetricCardSkeleton />
-                <MetricCardSkeleton />
-                <MetricCardSkeleton />
-              </div>
-              <ChartSkeleton />
-            </div>
-          ) : summary ? (
-            <div className="space-y-16">
-              {/* Magic Narrative Section */}
-              <MagicBriefing userName={session.user?.name || ""} summary={summary} />
-
-              {/* Bento Grid layout */}
-              <div className="space-y-12">
-
-                {/* Top Metrics Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-                  <MetricCard
-                    title="Active Audience"
-                    value={summary.totalUsers.toLocaleString()}
-                    icon={Users}
-                    trend={summary.usersTrend}
-                    sparklineData={summary.chartData.map(d => d.users)}
-                    variant="hero"
-                    contextHint={summary.usersTrend?.isUp ? "Growing steadily" : "Needs attention"}
-                  />
-                  <MetricCard
-                    title="Engagement"
-                    value={summary.totalSessions.toLocaleString()}
-                    icon={MousePointer2}
-                    trend={summary.sessionsTrend}
-                    description="Total user sessions recorded."
-                  />
-                  <MetricCard
-                    title="Page Reach"
-                    value={summary.totalPageViews.toLocaleString()}
-                    icon={Eye}
-                    trend={summary.pageViewsTrend}
-                    description="Visual impressions across all pages."
-                  />
+            <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="px-4 py-2 text-right border-r border-slate-100">
+                <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Live Users</p>
+                <div className="flex items-center gap-2 justify-end">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-lg font-bold text-slate-900 leading-none">{liveUsers}</span>
                 </div>
+              </div>
+              <DateRangeSelector
+                onSelectDateRange={handleDateRangeChange}
+                isLoading={loading}
+                variant="minimal"
+              />
+            </div>
+          </header>
 
-                {/* Main Trend Visualization */}
-                <section className="soft-card p-12 rounded-[4rem] relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-accent-primary/10 transition-all duration-1000" />
+          {error && (
+            <div className="mb-8 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl flex items-center gap-3 font-semibold text-sm">
+              <ShieldCheck size={18} />
+              {error}
+              <button onClick={handleRefresh} className="ml-auto underline underline-offset-4">Retry</button>
+            </div>
+          )}
 
-                  <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
-                    <div>
-                      <h3 className="text-2xl font-[900] text-slate-800 tracking-tight flex items-center gap-4">
-                        <Sparkles className="text-accent-secondary" size={28} />
-                        Traffic Flow
-                      </h3>
-                      <p className="text-base font-bold text-slate-400 mt-2 ml-10">
-                        Visualizing user movement {selectedDateRange.label.toLowerCase()}
-                      </p>
-                    </div>
+          <div className="grid grid-cols-12 gap-8">
+
+            {/* AI Executive Summary & Main Graph */}
+            <div className="col-span-12 lg:col-span-8 space-y-8">
+
+              {/* AI Executive Summary */}
+              {summary ? (
+                <div className="bg-white border border-slate-200 rounded-[2rem] p-8 md:p-10 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-10 opacity-[0.03]">
+                    <Activity size={240} strokeWidth={1} />
                   </div>
 
                   <div className="relative z-10">
-                    <TrafficChart
-                      data={summary.chartData}
-                      compare={!!summary.previousUsers}
-                    />
-                  </div>
-                </section>
-
-                {/* Secondary Grid (Bento Style) */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
-                  <div className="xl:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <div className="animate-entrance" style={{ animationDelay: '100ms' }}>
-                      <TopPages pages={summary.topPages} />
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="p-2 bg-indigo-600 text-white rounded-xl">
+                        <Sparkles size={18} />
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-widest text-slate-400">AI Intelligence Insight</span>
                     </div>
-                    <div className="animate-entrance" style={{ animationDelay: '200ms' }}>
-                      <TrafficSources sources={summary.sources} />
-                    </div>
-                  </div>
 
-                  <div className="xl:col-span-4 animate-entrance" style={{ animationDelay: '300ms' }}>
-                    <InsightsList insights={generateHumanInsights(summary)} />
-                    <div className="mt-12 soft-card p-8 rounded-[2.5rem] bg-slate-900 border-none group hover:scale-[1.02] transition-all">
-                      <Zap className="text-amber-400 mb-4 animate-pulse" size={32} />
-                      <h4 className="text-white font-[900] text-xl mb-4">Pro Tip:</h4>
-                      <p className="text-slate-400 text-sm font-bold leading-relaxed">
-                        Most of your traffic drops off on mobile. Try optimizing your landing page for better mobile engagement!
-                      </p>
+                    <div className="mb-6">
+                      <MagicBriefing userName={session.user?.name || ""} summary={summary} variant="minimal" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                      <div className="space-y-4">
+                        <p className="text-slate-600 leading-relaxed font-medium">
+                          Your traffic has {summary.usersTrend?.isUp ? 'increased' : 'decreased'} by <strong>{summary.usersTrend?.value}%</strong> compared to the previous period.
+                          {summary.usersTrend?.isUp ? ' Keep up the great work!' : ' Let\'s investigate the drop in engagement.'}
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <ExportButton summary={summary} dateRange={selectedDateRange} />
+                          <button
+                            onClick={handleRefresh}
+                            className="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+                          >
+                            <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} /> Update Narrative
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col justify-center gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-slate-500">Active Audience</span>
+                          <span className="text-xl font-bold text-slate-900">{summary.totalUsers.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-slate-500">Growth Index</span>
+                          <span className={`text-xl font-bold ${summary.usersTrend?.isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {summary.usersTrend?.isUp ? '+' : '-'}{summary.usersTrend?.value}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ) : (loading ? <div className="h-40 bg-white animate-pulse rounded-[2rem]" /> : null)}
+
+              {/* Performance Graph */}
+              <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-10">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Traffic Velocity</h3>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sessions / Flow</p>
+                  </div>
+                  {summary && (
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${summary.sessionsTrend?.isUp ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                      {summary.sessionsTrend?.isUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                      {summary.sessionsTrend?.value}% vs. prev
+                    </div>
+                  )}
+                </div>
+                <div className="h-[320px] w-full">
+                  {loading ? (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-50 rounded-xl">
+                      <RefreshCw className="animate-spin text-slate-200" size={32} />
+                    </div>
+                  ) : summary ? (
+                    <TrafficChart data={summary.chartData} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-50 rounded-xl text-slate-300 font-bold italic">
+                      Waiting for property selection...
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-40">
-              <div className="w-32 h-32 bg-slate-50 rounded-[4rem] flex items-center justify-center mb-12 animate-bounce">
-                <BarChart3 className="text-slate-200" size={56} />
+
+            {/* Right Column: KPIs & Acquisition */}
+            <div className="col-span-12 lg:col-span-4 space-y-8">
+
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                {loading ? (
+                  <>
+                    <div className="h-24 bg-white animate-pulse rounded-3xl" />
+                    <div className="h-24 bg-white animate-pulse rounded-3xl" />
+                  </>
+                ) : summary ? (
+                  <>
+                    <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Page Reach</p>
+                      <p className="text-2xl font-bold text-slate-900">{summary.totalPageViews > 1000 ? (summary.totalPageViews / 1000).toFixed(1) + 'k' : summary.totalPageViews}</p>
+                    </div>
+                    <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Engagement</p>
+                      <p className="text-2xl font-bold text-slate-900">{summary.totalSessions > 1000 ? (summary.totalSessions / 1000).toFixed(1) + 'k' : summary.totalSessions}</p>
+                    </div>
+                  </>
+                ) : null}
               </div>
-              <p className="text-2xl font-[900] text-slate-300 italic tracking-tight">
-                Pick a property to start the magic...
-              </p>
+
+              {/* Acquisition Mix */}
+              <div className="bg-white border border-slate-200 p-8 rounded-[2rem] shadow-sm">
+                <div className="flex items-center gap-3 mb-8">
+                  <Target size={18} className="text-indigo-600" />
+                  <h3 className="text-sm font-bold uppercase tracking-widest">Acquisition Mix</h3>
+                </div>
+                {loading ? (
+                  <div className="h-64 bg-slate-50 animate-pulse rounded-xl" />
+                ) : summary ? (
+                  <>
+                    <div className="h-48 mb-8">
+                      <TrafficSources sources={summary.sources} variant="donut" />
+                    </div>
+                  </>
+                ) : null}
+              </div>
+
+              {/* Global Context */}
+              <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden group">
+                <div className="flex items-center justify-between mb-6 relative z-10">
+                  <div className="flex items-center gap-3">
+                    <Globe size={18} className="text-indigo-400" />
+                    <h3 className="text-sm font-bold uppercase tracking-widest">Global Reach</h3>
+                  </div>
+                </div>
+                <GlobalPulse />
+                <div className="mt-6 flex justify-between text-center relative z-10">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Status</p>
+                    <p className="text-sm font-bold">Active Stream</p>
+                  </div>
+                  <div className="w-px bg-slate-800" />
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Monitoring</p>
+                    <p className="text-sm font-bold text-indigo-400">Real-time</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Content Table */}
+              <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Content Performance</h3>
+                  <Share2 size={16} className="text-slate-300" />
+                </div>
+                <div className="divide-y divide-slate-50">
+                  {loading ? (
+                    <ListSkeleton count={3} />
+                  ) : summary ? (
+                    <TopPages pages={summary.topPages} variant="minimal" />
+                  ) : null}
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Footer */}
+          <footer className="mt-20 pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex gap-8 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+              <a href="#" className="hover:text-indigo-600 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-indigo-600 transition-colors">Documentation</a>
+              <a href="#" className="hover:text-indigo-600 transition-colors">API Status</a>
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              Securely Connected to GA4 <ShieldCheck size={12} className="text-emerald-500" />
+            </p>
+          </footer>
+        </main>
+      </div>
+    </ErrorBoundary>
+  );
+}
+
+function ListSkeleton({ count }: { count: number }) {
+  return (
+    <>
+      {[...Array(count)].map((_, i) => (
+        <div key={i} className="p-5 flex justify-between">
+          <div className="w-2/3 h-4 bg-slate-50 rounded animate-pulse" />
+          <div className="w-10 h-4 bg-slate-50 rounded animate-pulse" />
         </div>
-      </main >
-    </ErrorBoundary >
+      ))}
+    </>
   );
 }
